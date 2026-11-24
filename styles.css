@@ -86,18 +86,6 @@
       .hero-photo img{width:100%;height:100%;min-height:260px;object-fit:cover;aspect-ratio:4/3}
       .hero-cta{display:flex;gap:10px;flex-wrap:wrap}
 
-      /* ---------- Download strip ---------- */
-      .download-strip{
-        margin:26px 0 4px;background:#111;color:#fff;border-radius:var(--radius);
-        padding:20px 22px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;
-      }
-      @media (prefers-color-scheme: dark){ .download-strip{background:#f2f2ee;color:#141414} .download-strip .btn{border-color:#141414} .download-strip .btn-solid{background:#141414;color:#fff} }
-      .download-strip h2{font-family:"Marcellus",Georgia,serif;font-weight:400;font-size:21px;margin:0 0 4px}
-      .download-strip p{margin:0;font-size:14.5px;opacity:.85;max-width:52em}
-      .download-strip .btn{margin-left:auto;background:transparent;color:inherit;border-color:currentColor}
-      .download-strip .btn-solid{background:#fff;color:#111;border-color:#fff}
-      @media (prefers-color-scheme: dark){ .download-strip .btn-solid{background:#141414;color:#fff;border-color:#141414} }
-
       /* ---------- Sections ---------- */
       section{padding:30px 0 4px}
       .sec-head{margin-bottom:16px}

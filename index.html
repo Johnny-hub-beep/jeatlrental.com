@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles-index-1.css" />
   </head>
   <body>
     <!-- Brand bar -->
@@ -229,18 +229,19 @@
           </div>
 
           <div class="submit-row">
-            <button class="btn btn-solid submit-btn" type="submit">Request my quote</button>
+            <button class="btn btn-solid submit-btn" type="submit" id="submitBtn">Request Booking</button>
             <p class="fineprint">No payment is taken here and no prices are shown online. Johnny will call the number you provide with your quote.</p>
           </div>
 
           <!-- Confirmation -->
           <div class="confirm" id="confirmBox" role="status" aria-live="polite">
-            <h3>Your booking request is ready</h3>
+            <h3>Your booking request was sent</h3>
+            <p class="ref" id="sendStatus"></p>
             <p class="ref">Booking reference: <strong id="refOut"></strong></p>
-            <div class="addr-note"><strong>Next step:</strong> Send this booking to us using the email button below (or have your reference ready when we call). Your full delivery address is provided after booking confirmation — Johnny will confirm it with you on the quote call.</div>
+            <div class="addr-note"><strong>Next step:</strong> We have your request — Johnny will call you with your quote. Have your reference ready when we call. Your full delivery address is provided after booking confirmation — Johnny will confirm it with you on the quote call.</div>
             <div class="summary-box" id="summaryOut"></div>
             <div class="confirm-actions">
-              <a class="btn btn-solid" id="emailBookingBtn" href="#">Email this booking to us</a>
+              <a class="btn" id="emailBookingBtn" href="#">Send by email instead</a>
               <button class="btn" type="button" id="copyBtn">Copy booking details</button>
               <button class="btn" type="button" id="downloadSummaryBtn">Download booking (.txt)</button>
               <a class="btn btn-ghost" href="tel:+16787567043">Call (678) 756-7043</a>
@@ -348,8 +349,14 @@
 
         var lastBooking = null;
 
-        /* ---------- Submit ---------- */
-        $("bookingForm").addEventListener("submit", function (e) {
+        /* ---------- Submit: auto-send to Johnny via FormSubmit ---------- */
+        /* The live site is static (GitHub Pages, no server), so the form
+           sends itself to johnnyb2bseller@gmail.com via FormSubmit.
+           First booking from the live site triggers an activation email
+           to that inbox — Johnny must click it once, then all later
+           bookings arrive automatically. The mailto button below stays
+           as a backup if the auto-send fails. */
+        $("bookingForm").addEventListener("submit", async function (e) {
           e.preventDefault();
           var ok = true;
 
@@ -410,6 +417,47 @@
 
           lastBooking = { ref: ref, summary: summary };
 
+          // Auto-send: POST the booking to FormSubmit (emails Johnny).
+          var submitBtn = $("submitBtn");
+          var sendStatus = $("sendStatus");
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Sending…";
+          var sent = false;
+          try {
+            var payload = new URLSearchParams();
+            payload.append("Booking reference", ref);
+            if (chairQty > 0) payload.append("Chairs", chairQty + " x " + $("chairCategory").value);
+            if (tableQty > 0) payload.append("Tables", tableQty + " x " + $("tableCategory").value);
+            payload.append("Rental dates", prettyDate(dateFrom.value) + " to " + prettyDate(dateTo.value));
+            payload.append("Event ZIP code", zipVal);
+            payload.append("Phone", phoneVal);
+            payload.append("email", emailVal);
+            payload.append("Preferred payment", paySel.value);
+            if (notes) payload.append("Notes", notes);
+            payload.append("Booking details", summary);
+            payload.append("_subject", "Booking request " + ref + " — JohnnyEnterprise Event Rentals");
+            payload.append("_template", "table");
+            payload.append("_captcha", "false");
+            payload.append("_autoresponse", "Thank you for your booking request with JohnnyEnterprise Event Rentals. Your reference is " + ref + ". Johnny will call you with your quote.");
+            var ctrl = new AbortController();
+            var timer = setTimeout(function () { ctrl.abort(); }, 15000);
+            var res = await fetch("https://formsubmit.co/ajax/johnnyb2bseller@gmail.com", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
+              body: payload.toString(),
+              signal: ctrl.signal
+            });
+            clearTimeout(timer);
+            sent = res.ok;
+          } catch (err) { sent = false; }
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Request Booking";
+          if (sendStatus) {
+            sendStatus.textContent = sent
+              ? "Sent automatically to JohnnyEnterprise — no email app needed."
+              : "Auto-send did not go through — please tap \u201cSend by email instead\u201d below.";
+          }
+
           $("refOut").textContent = ref;
           $("summaryOut").textContent = summary;
           $("emailBookingBtn").href =
@@ -419,7 +467,7 @@
           var box = $("confirmBox");
           box.classList.add("show");
           box.scrollIntoView({ behavior: "smooth", block: "start" });
-          toast("Booking request ready — reference " + ref);
+          toast(sent ? "Booking request sent — reference " + ref : "Booking request ready — reference " + ref + ". Please send it by email.");
         });
 
         /* ---------- Copy ---------- */
